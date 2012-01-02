@@ -1,5 +1,5 @@
 /*
- * pyrb.c:
+ * pyrbmodule.c:
  *
  * 	A Python module that provides execution of Ruby code from
  * 	directly within the Python environment.  Note that the
@@ -18,11 +18,13 @@
 #include <Python.h>
 #include <ruby.h>
 
-// Object conversions, etc.
+// Object conversions & macros taking Ruby objects
 #define RBSTR2PYSTR(rbstr) Py_BuildValue("s", RSTRING_PTR(rbstr))
 #define RB_GET_ERRSTR() rb_funcall(rb_errinfo(), id_to_s, 0)
 #define RB_GET_ERRINFO() rb_funcall(rb_errinfo(), id_inspect, 0)
 #define RB_INSPECT(obj) rb_funcall(obj, id_inspect, 0)
+// Takes a C string
+#define FILE_EXISTS_P(fname) RTEST(rb_funcall(rb_cFile, rb_intern("exists?"), 1, rb_str_new2(fname)))
 
 // Protos
 static PyObject *pyrb_eval_s(PyObject *, PyObject *);
@@ -77,7 +79,7 @@ static PyObject *pyrb_eval_cstr(PyObject *self, char *arg)
 	rb_ret = RB_INSPECT(rb_eval_string_protect(rb_code, &state));
 	if (state) {
 		PyErr_SetString(pyrb_exc, RSTRING_PTR( RB_GET_ERRINFO() ));
-		return RBSTR2PYSTR( RB_GET_ERRINFO() );
+		return NULL;//RBSTR2PYSTR( RB_GET_ERRINFO() );
 	}
 	else
 		return RBSTR2PYSTR(rb_ret);
@@ -99,15 +101,20 @@ static PyObject *pyrb_eval_s(PyObject *self, PyObject *args)
 // Call the Ruby interpreter to eval/exec the contents of a file (name passed as Python string)
 static PyObject *pyrb_eval_f(PyObject *self, PyObject *args)
 {
-	const char *rb_code;
+	const char *fname;
 	VALUE rb_f_contents;
 	
-	if (! PyArg_ParseTuple(args, "s", &rb_code) )
+	if (! PyArg_ParseTuple(args, "s", &fname) )
 		return NULL;
 
-	rb_f_contents = rb_funcall(rb_cFile, rb_intern("read"), 1, rb_str_new2(rb_code));
-	rb_code = RSTRING_PTR(rb_funcall(rb_f_contents, id_to_s, 0));
-	return pyrb_eval_cstr(self, (char *)rb_code);
+	if (! FILE_EXISTS_P(fname) ) {
+		PyErr_SetString(PyExc_IOError, "file not found");
+		return NULL;
+	}
+
+	rb_f_contents = rb_funcall(rb_cFile, rb_intern("read"), 1, rb_str_new2(fname));
+	fname = RSTRING_PTR(rb_funcall(rb_f_contents, id_to_s, 0));
+	return pyrb_eval_cstr(self, (char *)fname);
 }
 
 
@@ -123,7 +130,7 @@ static PyObject *pyrb_eval(PyObject *self, PyObject *args)
 		return NULL;
 
 	// Check if this is an existing filename & run file contents if so
-	if (RTEST( rb_funcall(rb_cFile, rb_intern("exists?"), 1, rb_str_new2(str)) ))
+	if ( FILE_EXISTS_P(str) )
 		return pyrb_eval_f(self, args);
 	else
 		return pyrb_eval_s(self, args);
@@ -141,8 +148,8 @@ PyMODINIT_FUNC initpyrb()
 	// Python inits
 	module = Py_InitModule("pyrb", pyrb_methods);
 
-	pyrb_exc = PyErr_NewException("pyrb.error", NULL, NULL);
-	Py_INCREF(pyrb_exc);
-	Py_INCREF(Py_None);
+	pyrb_exc = PyErr_NewException("pyrb.ruby_error", NULL, NULL);
+	Py_XINCREF(pyrb_exc);
+//	Py_INCREF(Py_None);
 	PyModule_AddObject(module, "error", pyrb_exc);
 }
