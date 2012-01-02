@@ -1,5 +1,6 @@
 #!/bin/sh
 
-cmd="gcc $@ -O2 -Wall -pipe -shared -fPIC -I/usr/local/include/ruby-1.9.1 -I/usr/local/include/ruby-1.9.1/x86_64-linux/ -I/usr/include/python2.6 -lpython2.6 pyrbmodule.c -L/usr/lib64 -lruby"
+cmd="gcc $@ -g -O2 -Wall -pipe -shared -static -fPIC -I/usr/local/include/ruby-1.9.1 -I/usr/local/include/ruby-1.9.1/x86_64-linux/ -I/usr/include/python2.6 -L/usr/lib64 -L/lib64 pyrbmodule.c -lrt -lcrypt -lpython2.6 libruby-static.a"
+#cmd="gcc $@ -g -O2 -Wall -pipe -shared -fPIC -I/usr/local/include/ruby-1.9.1 -I/usr/local/include/ruby-1.9.1/x86_64-linux/ -I/usr/include/python2.6 -lpython2.6 pyrbmodule.c -L/usr/lib64 -lruby"
 echo $cmd
 $cmd

@@ -18,15 +18,21 @@
 #include <Python.h>
 #include <ruby.h>
 
-// Object conversions & macros taking Ruby objects
+/* Object conversions & macros taking Ruby objects */
+// RubyStringObject -> PythonStringObject
 #define RBSTR2PYSTR(rbstr) Py_BuildValue("s", RSTRING_PTR(rbstr))
+// `$!.to_s()' ($! == most recent Ruby exception object)
 #define RB_GET_ERRSTR() rb_funcall(rb_errinfo(), id_to_s, 0)
+// `$!.inspect()'
 #define RB_GET_ERRINFO() rb_funcall(rb_errinfo(), id_inspect, 0)
+// `obj.inspect()'
 #define RB_INSPECT(obj) rb_funcall(obj, id_inspect, 0)
-// Takes a C string
+
+// Boolean value indicating file (non)existence; takes a C string, unlike the above
 #define FILE_EXISTS_P(fname) RTEST(rb_funcall(rb_cFile, rb_intern("exists?"), 1, rb_str_new2(fname)))
 
-// Protos
+
+/* Protos */
 static PyObject *pyrb_eval_s(PyObject *, PyObject *);
 static PyObject *pyrb_eval_f(PyObject *, PyObject *);
 static PyObject *pyrb_eval(PyObject *, PyObject *);
@@ -34,7 +40,7 @@ static PyObject *pyrb_eval(PyObject *, PyObject *);
 // Python exception object to indicate a Ruby interpreter exception occurred
 static PyObject *pyrb_exc;
 
-// Ruby IDs (internalized strings), etc.
+/* Ruby IDs (internalized strings), etc. */
 static ID id_to_s;
 static ID id_inspect;
 static int rb_needs_init = 1;
@@ -48,6 +54,7 @@ static PyMethodDef pyrb_methods[] = {
 	  "Evaluate the contents of a file as Ruby code." },
 	{ "eval", pyrb_eval, METH_VARARGS,
 	  "Eval contents of file if filename exists, else eval string as code." },
+	{ NULL, NULL, 0, NULL },
 };
 
 
@@ -140,16 +147,15 @@ static PyObject *pyrb_eval(PyObject *self, PyObject *args)
 // Initialize Python bindings, init the embedded Ruby interpreter, etc.
 PyMODINIT_FUNC initpyrb()
 {
-	PyObject *module;
+	PyObject *pyrb_module;
 
 	// Ruby init
 	init_ruby_env(0, NULL);
 
 	// Python inits
-	module = Py_InitModule("pyrb", pyrb_methods);
+	pyrb_module = Py_InitModule("pyrb", pyrb_methods);
 
 	pyrb_exc = PyErr_NewException("pyrb.ruby_error", NULL, NULL);
 	Py_XINCREF(pyrb_exc);
-//	Py_INCREF(Py_None);
-	PyModule_AddObject(module, "error", pyrb_exc);
+	PyModule_AddObject(pyrb_module, "exception", pyrb_exc);
 }
