@@ -1,6 +1,5 @@
 #include <Python.h>
 #include <ruby.h>
-#include "dynstring.h"
 
 
 #define RBSTR2PYSTR(rbstr) Py_BuildValue("s", RSTRING_PTR(rbstr))
@@ -52,8 +51,6 @@ static PyObject *pyrb_eval_cstr(PyObject *self, char *arg)
 static PyObject *pyrb_eval_s(PyObject *self, PyObject *args)
 {
 	const char *rb_code;
-	int state = 0;
-	VALUE rb_ret;
 
 	if (! PyArg_ParseTuple(args, "s", &rb_code) )
 		return NULL;
