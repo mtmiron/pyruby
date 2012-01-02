@@ -2,13 +2,16 @@
  * pyrb.c:
  *
  * 	A Python module that provides execution of Ruby code from
- * 	directly within the Python environment.
+ * 	directly within the Python environment.  Note that the
+ * 	return value of pyrb.eval is the Kernel#inspect() string of
+ * 	the returned Ruby object (converted to a Python string).
  *
  * Usage:
  *
  * import pyrb
  * pyrb.eval_s("Any valid Ruby code can be passed as a Python string.")
  * pyrb.eval_f("RubyScriptFile.rb")
+ * pyrb.eval("If this filename exists, same as eval_f; else same as eval_s")
  *
  */
 
@@ -46,6 +49,23 @@ static PyMethodDef pyrb_methods[] = {
 };
 
 
+// Initialize the embedded Ruby interpreters environment
+static inline void init_ruby_env(int argc, char **argv)
+{
+	if (!rb_needs_init)
+		return;
+
+	ruby_init();
+	ruby_init_loadpath();
+	ruby_set_argv(argc, argv);
+
+	id_to_s = rb_intern("to_s");
+	id_inspect = rb_intern("inspect");
+
+	rb_needs_init = 0;
+}
+
+
 // Call the Ruby interpreter to eval/exec a C string; other pyrb_evals ultimately
 // call this func to perform the actual Ruby code evaluation
 static PyObject *pyrb_eval_cstr(PyObject *self, char *arg)
@@ -79,7 +99,7 @@ static PyObject *pyrb_eval_s(PyObject *self, PyObject *args)
 // Call the Ruby interpreter to eval/exec the contents of a file (name passed as Python string)
 static PyObject *pyrb_eval_f(PyObject *self, PyObject *args)
 {
-	char *rb_code;
+	const char *rb_code;
 	VALUE rb_f_contents;
 	
 	if (! PyArg_ParseTuple(args, "s", &rb_code) )
@@ -87,7 +107,7 @@ static PyObject *pyrb_eval_f(PyObject *self, PyObject *args)
 
 	rb_f_contents = rb_funcall(rb_cFile, rb_intern("read"), 1, rb_str_new2(rb_code));
 	rb_code = RSTRING_PTR(rb_funcall(rb_f_contents, id_to_s, 0));
-	return pyrb_eval_cstr(self, rb_code);
+	return pyrb_eval_cstr(self, (char *)rb_code);
 }
 
 
@@ -115,14 +135,8 @@ PyMODINIT_FUNC initpyrb()
 {
 	PyObject *module;
 
-	// Ruby inits
-	ruby_init();
-	ruby_init_loadpath();
-	ruby_set_argv(0, NULL);
-	rb_needs_init = 0;
-
-	id_to_s = rb_intern("to_s");
-	id_inspect = rb_intern("inspect");
+	// Ruby init
+	init_ruby_env(0, NULL);
 
 	// Python inits
 	module = Py_InitModule("pyrb", pyrb_methods);
