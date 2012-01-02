@@ -1,0 +1,61 @@
+#include <Python.h>
+#include <ruby.h>
+#include "dynstring.h"
+
+
+#define RBSTR2PYSTR(rbstr) Py_BuildValue("s", RSTRING_PTR(rbstr))
+#define RB_GET_ERRSTR() rb_funcall(rb_gv_get("$!"), id_to_s, 0)
+
+
+static PyObject *pyrb_eval_s(PyObject *, PyObject *);
+
+static ID id_to_s;
+static rb_needs_init = 1;
+
+
+
+static PyMethodDef pyrb_methods[] = {
+	{ "eval_s", pyrb_eval_s, METH_VARARGS,
+		"Evaluate a Python string object using the Ruby interpreter." },
+	{ NULL, NULL, 0, NULL },
+};
+
+
+int main(int argc, char **argv, char **env)
+{
+	printf("Success! ... but for how long? Dum-dum-DUM!\n");
+	return 0;
+}
+
+
+static PyObject *pyrb_eval_s(PyObject *self, PyObject *args)
+{
+	const char *rb_code;
+	int state = 0;
+	VALUE rb_ret;
+
+	if (rb_needs_init) {
+		ruby_init();
+		ruby_init_loadpath();
+		ruby_set_argv(0, NULL);
+		rb_needs_init = 0;
+	}
+	if (! PyArg_ParseTuple(args, "s", &rb_code) )
+		return NULL;
+
+//	rb_eval_string(rb_code);
+	rb_ret = rb_eval_string_protect(rb_code, &state);
+	if (state)
+		return RBSTR2PYSTR( RB_GET_ERRSTR() );
+	else
+		return Py_BuildValue("i", RBSTR2PYSTR(rb_ret) );
+}
+
+
+PyMODINIT_FUNC initpyrb(void)
+{
+	Py_INCREF(Py_None);
+	id_to_s = rb_intern("to_s");
+	(void)Py_InitModule("pyrb", pyrb_methods);
+}
+

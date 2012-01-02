@@ -1,0 +1,3 @@
+#!/bin/sh
+
+gcc "$@" -I/usr/local/include/ruby-1.9.1 -I/usr/local/include/ruby-1.9.1/x86_64-linux/ -I/usr/include/python2.6 -lpython2.6 pyrubymodule.c dynstring.c -L/usr/lib64 -lruby
