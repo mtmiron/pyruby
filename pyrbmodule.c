@@ -86,7 +86,7 @@ static PyObject *pyrb_eval_cstr(PyObject *self, char *arg)
 	rb_ret = RB_INSPECT(rb_eval_string_protect(rb_code, &state));
 	if (state) {
 		PyErr_SetString(pyrb_exc, RSTRING_PTR( RB_GET_ERRINFO() ));
-		return NULL;//RBSTR2PYSTR( RB_GET_ERRINFO() );
+		return NULL;
 	}
 	else
 		return RBSTR2PYSTR(rb_ret);
