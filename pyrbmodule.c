@@ -36,6 +36,12 @@
 static PyObject *pyrb_eval_s(PyObject *, PyObject *);
 static PyObject *pyrb_eval_f(PyObject *, PyObject *);
 static PyObject *pyrb_eval(PyObject *, PyObject *);
+static PyObject *pyrb_eval_cstr(PyObject *, char *);
+static PyObject *pyrb_ruby_version(PyObject *);
+
+static PyObject *rbobject_to_pyobject(VALUE);
+static PyObject *rbarray_to_pylist(VALUE);
+
 
 // Python exception object to indicate a Ruby interpreter exception occurred
 static PyObject *pyrb_exc;
@@ -54,12 +60,14 @@ static PyMethodDef pyrb_methods[] = {
 	  "Evaluate the contents of a file as Ruby code." },
 	{ "eval", pyrb_eval, METH_VARARGS,
 	  "Eval contents of file if filename exists, else eval string as code." },
+    { "ruby_version", (PyCFunction)pyrb_ruby_version, METH_NOARGS,
+      "Return the version of the embedded Ruby interpreter" },
 	{ NULL, NULL, 0, NULL },
 };
 
 
 // Initialize the embedded Ruby interpreters environment
-static inline void init_ruby_env(int argc, char **argv)
+static void init_ruby_env(int argc, char **argv)
 {
 	if (!rb_needs_init)
 		return;
@@ -74,6 +82,59 @@ static inline void init_ruby_env(int argc, char **argv)
 	rb_needs_init = 0;
 }
 
+// Convert a Ruby object to it's Python equivalent
+static PyObject *rbobject_to_pyobject(VALUE rb_obj)
+{
+    switch (rb_type(rb_obj))
+    {
+      case T_FLOAT:
+        return (PyObject*)Py_BuildValue("f", RFLOAT_VALUE(rb_obj));
+
+      case T_BIGNUM:
+      case T_FIXNUM:
+        return (PyObject*)Py_BuildValue("l", NUM2LONG(rb_obj));
+
+      case T_ARRAY:
+        return rbarray_to_pylist(rb_obj);
+
+      case T_TRUE:
+        Py_RETURN_TRUE;
+
+      case T_FALSE:
+        Py_RETURN_FALSE;
+
+      case T_NIL:
+        Py_RETURN_NONE;
+
+      case T_STRING:
+        return PyString_FromString(RSTRING_PTR(rb_obj));
+
+      default:
+		return RBSTR2PYSTR(RB_INSPECT(rb_obj));
+    }
+}
+
+// Convert a Ruby array to a Python list, recursively converting all elements
+static PyObject *rbarray_to_pylist(VALUE ary)
+{
+    PyObject *list;
+    int i, len;
+
+    len = RARRAY_LEN(ary);
+    list = PyList_New(len);
+
+    for (i = 0; i < len; i++)
+    {
+        PyList_SET_ITEM(list, i, rbobject_to_pyobject(rb_ary_entry(ary, i)));
+    }
+    return list;
+}
+
+// Get the version of the embedded Ruby interpreter
+static PyObject *pyrb_ruby_version(PyObject *self)
+{
+    return (PyObject *)pyrb_eval_cstr(self, (char *)"RUBY_VERSION");
+}
 
 // Call the Ruby interpreter to eval/exec a C string; other pyrb_evals ultimately
 // call this func to perform the actual Ruby code evaluation
@@ -83,13 +144,12 @@ static PyObject *pyrb_eval_cstr(PyObject *self, char *arg)
 	int state = 0;
 	VALUE rb_ret;
 
-	rb_ret = RB_INSPECT(rb_eval_string_protect(rb_code, &state));
+	rb_ret = rb_eval_string_protect(rb_code, &state);
 	if (state) {
 		PyErr_SetString(pyrb_exc, RSTRING_PTR( RB_GET_ERRINFO() ));
 		return NULL;
 	}
-	else
-		return RBSTR2PYSTR(rb_ret);
+    return rbobject_to_pyobject(rb_ret);
 }
 
 
