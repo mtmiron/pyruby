@@ -1,24 +1,37 @@
 /*
  * pyrbmodule.c:
  *
- * 	A Python module that provides execution of Ruby code from
- * 	directly within the Python environment.  Note that the
- * 	return value of pyrb.eval is the Kernel#inspect() string of
- * 	the returned Ruby object (converted to a Python string).
+ * 	A Python module that provides native execution of Ruby code
+ * 	from directly within the Python interpreter's environment.
+ *
+ * 	Note: return value of pyrb.eval is a Python-ized Ruby object
+ * 	(Ruby arrays become Python lists, nil becomes None, etc.)
+ *
  *
  * Usage:
  *
- * import pyrb
- * pyrb.eval_s("Any valid Ruby code can be passed as a Python string.")
- * pyrb.eval_f("RubyScriptFile.rb")
- * pyrb.eval("If this filename exists, same as eval_f; else same as eval_s")
+ *  import pyrb
+ *
+ *  # Execute a string as Ruby code
+ *  pyrb.eval_s("Any valid Ruby code can be passed as a Python string.")
+ *
+ *  # Execute a file as a Ruby script
+ *  pyrb.eval_f("RubyScriptFile.rb")
+ *
+ *  # Just evaluate the parameter based on context (existing file or string code)
+ *  pyrb.eval("If this filename exists, same as eval_f; else same as eval_s")
  *
  */
 
+
+// Python "requests" that it always come first
 #include <Python.h>
 #include <ruby.h>
 
-/* Object conversions & macros taking Ruby objects */
+
+/*
+ * Object conversions & macros taking Ruby objects
+*/
 // RubyStringObject -> PythonStringObject
 #define RBSTR2PYSTR(rbstr) Py_BuildValue("s", RSTRING_PTR(rbstr))
 // `$!.to_s()' ($! == most recent Ruby exception object)
@@ -46,13 +59,13 @@ static PyObject *rbarray_to_pylist(VALUE);
 // Python exception object to indicate a Ruby interpreter exception occurred
 static PyObject *pyrb_exc;
 
-/* Ruby IDs (internalized strings), etc. */
+/* Ruby IDs (internalized strings, i.e. Ruby symbols), etc. */
 static ID id_to_s;
 static ID id_inspect;
 static int rb_needs_init = 1;
 
 
-// Method definition structure for Python
+// Method definition structure of the module (Python bindings)
 static PyMethodDef pyrb_methods[] = {
 	{ "eval_s", pyrb_eval_s, METH_VARARGS,
 	  "Evaluate a Python string as Ruby code." },
@@ -82,7 +95,8 @@ static void init_ruby_env(int argc, char **argv)
 	rb_needs_init = 0;
 }
 
-// Convert a Ruby object to it's Python equivalent
+
+// Convert a standard Ruby object to it's Python equivalent
 static PyObject *rbobject_to_pyobject(VALUE rb_obj)
 {
     switch (rb_type(rb_obj))
@@ -114,7 +128,7 @@ static PyObject *rbobject_to_pyobject(VALUE rb_obj)
     }
 }
 
-// Convert a Ruby array to a Python list, recursively converting all elements
+// Convert a Ruby array to a Python list, recursively Python-izing all elements
 static PyObject *rbarray_to_pylist(VALUE ary)
 {
     PyObject *list;
@@ -129,6 +143,7 @@ static PyObject *rbarray_to_pylist(VALUE ary)
     }
     return list;
 }
+
 
 // Get the version of the embedded Ruby interpreter
 static PyObject *pyrb_ruby_version(PyObject *self)
