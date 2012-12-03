@@ -14,15 +14,15 @@ Usage:
 import pyrb
 
 
-- Execute a string as Ruby code
+== Execute a string as Ruby code
 
 pyrb.eval_s("Any valid Ruby code can be passed as a Python string.")
  
-- Execute a file as a Ruby script
+== Execute a file as a Ruby script
 
 pyrb.eval_f("RubyScriptFile.rb")
 
-- Just evaluate the parameter based on context (existing file or string code)
+== Just evaluate the parameter based on context (existing file or string code)
 
 pyrb.eval("If this filename exists, same as eval_f; else same as eval_s")
 
