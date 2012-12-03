@@ -1,18 +1,22 @@
  Pyruby module
-=======
+===
+A Python module written in C that provides an embedded Ruby interpreter
+within Python to allow evaluation of Ruby code in a sandboxed sub environment.
 
-+ A Python module written in C that provides an embedded Ruby interpreter
-  within Python to allow evaluation of Ruby code in a sandboxed sub environment.
- 
-+ Note that the return values of pyrb.eval are Python-ized Ruby objects
+ * Note that the return values of pyrb.eval are Python-ized Ruby objects
  	(Ruby arrays become Python lists, Ruby exceptions are converted to Python runtime
   exceptions and rethrown properly, Ruby's nil becomes Python's None, etc.)
 
-+ The code won't compile unless linked against, built with, or otherwise allowed to call
+ * The code won't compile unless linked against, built with, or otherwise allowed to call
   C Ruby's API.  The licensing is the same; see [Ruby's site](http://www.ruby-lang.org)
   for the source as necessary.
 
-### Usage
+#### Functions
+* _`pyrb.eval_s`_    <center>evaluate a string</center>
+* _`pyrb.eval_f`_    <center>evaluate a file</center>
+* _`pyrb.eval`_      evaluate whichever it looks like
+
+#### Usage
 
 ```Python
 import pyrb
