@@ -1,8 +1,5 @@
 #!/usr/bin/env python2
-
 import pyrb
-import pprint
-
 
 ruby_script_array="""
     def make_an_array()
@@ -16,7 +13,7 @@ ruby_script_array="""
 """
 
 ruby_script_exception="""
-    raise "This Exception was raised in Ruby!"
+    raise "This Exception was raised in Ruby"
 """
 
 
