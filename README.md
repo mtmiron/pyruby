@@ -11,6 +11,10 @@ within Python to allow evaluation of Ruby code in a sandboxed sub environment.
   C Ruby's API.  The licensing is the same; see [Ruby's site](http://www.ruby-lang.org)
   for the source as necessary.
 
+## But why...!?!
+I was a bored undergraduate: why not?
+
+
 #### Functions
 * _`pyrb.eval_s`_    <center>evaluate a string</center>
 * _`pyrb.eval_f`_    <center>evaluate a file</center>
