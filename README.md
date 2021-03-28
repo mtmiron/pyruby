@@ -7,9 +7,8 @@ within Python to allow evaluation of Ruby code in a sandboxed sub environment.
  	(Ruby arrays become Python lists, Ruby exceptions are converted to Python runtime
   exceptions and rethrown properly, Ruby's nil becomes Python's None, etc.)
 
- * The code won't compile unless linked against, built with, or otherwise allowed to call
-  C Ruby's API.  The licensing is the same; see [Ruby's site](http://www.ruby-lang.org)
-  for the source as necessary.
+ * The module can't be generated unless it's statically linked with Ruby's libraries.
+   To that end, an x86_64 libruby-static.a archive is included (from Ruby v1.9.1).
 
 ## What purpose does this serve?
 It has very few practical uses (I was a bored undergraduate).
