@@ -11,8 +11,12 @@ within Python to allow evaluation of Ruby code in a sandboxed sub environment.
   C Ruby's API.  The licensing is the same; see [Ruby's site](http://www.ruby-lang.org)
   for the source as necessary.
 
-## But why...!?!
-I was a bored undergraduate: why not?
+## What purpose does this serve?
+It has very few practical uses (I was a bored undergraduate).
+
+
+## Multithreading
+Python's GIL (global interpreter lock) is completely independent of any executing Ruby code; meaning that Ruby, without a global interpeter lock, is free to run as many threads as it likes.  It may work, but there are much better methods of parallelization.
 
 
 #### Functions
